@@ -33,21 +33,28 @@
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 1,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
-                "color": "red",
-                "value": 80
+                "color": "orange",
+                "value": 20
+              },
+              {
+                "color": "#EAB839",
+                "value": 40
+              },
+              {
+                "color": "green",
+                "value": 60
               }
             ]
           },
+          "unit": "percent",
           "unitScale": true
         },
         "overrides": []
@@ -58,7 +65,7 @@
         "x": 0,
         "y": 0
       },
-      "id": 3,
+      "id": 10,
       "options": {
         "minVizHeight": 75,
         "minVizWidth": 75,
@@ -81,13 +88,13 @@
             "type": "influxdb",
             "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
           },
-          "query": "SELECT * FROM CONN",
+          "query": "select * from UPSL",
           "rawQuery": true,
           "refId": "A",
           "resultFormat": "time_series"
         }
       ],
-      "title": "Internet",
+      "title": "UPS Charge",
       "type": "gauge"
     },
     {
@@ -153,7 +160,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 15,
         "x": 4,
         "y": 0
       },
@@ -182,8 +189,220 @@
           "resultFormat": "time_series"
         }
       ],
-      "title": "Puissance VA 24H",
+      "title": "Puissance",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 45,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 30
+              },
+              {
+                "color": "red",
+                "value": 40
+              }
+            ]
+          },
+          "unit": "amp",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 5,
+        "x": 19,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "10.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+          },
+          "query": "select * from IINST",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "Intensité",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "#EAB839",
+                "value": 20
+              },
+              {
+                "color": "green",
+                "value": 30
+              }
+            ]
+          },
+          "unit": "m",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 3
+      },
+      "id": 11,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/^UPSA\\.value$/",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "10.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+          },
+          "query": "SELECT value from UPSA",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "title": "UPS Autonomie",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "kwatth",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 19,
+        "y": 6
+      },
+      "id": 8,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "10.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+          },
+          "query": "SELECT (sum(\"value\") / 3600)  AS \"kWh\" FROM \"PAPP\" WHERE time >= now() - 24h GROUP BY time(1h)\n",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "timeFrom": "24h",
+      "title": "KWh",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -251,7 +470,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 3
+        "y": 8
       },
       "id": 6,
       "options": {
@@ -282,75 +501,6 @@
       "timeFrom": "24h",
       "title": "Internet",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 76,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 60
-              }
-            ]
-          },
-          "unit": "celsius",
-          "unitScale": true
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 0,
-        "y": 7
-      },
-      "id": 2,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "10.3.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
-          },
-          "query": "SELECT * FROM TEMP",
-          "rawQuery": true,
-          "refId": "A",
-          "resultFormat": "time_series"
-        }
-      ],
-      "title": "Pi Temperature",
-      "type": "gauge"
     },
     {
       "datasource": {
@@ -418,7 +568,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 15,
         "x": 4,
         "y": 8
       },
@@ -448,8 +598,72 @@
         }
       ],
       "timeFrom": "24h",
-      "title": "Puissance VA",
+      "title": "Puissance",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyEUR",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 5,
+        "x": 19,
+        "y": 11
+      },
+      "id": 9,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "10.3.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "influxdb",
+            "uid": "ff17f170-bacd-46e7-b4db-37640441fe0b"
+          },
+          "query": "SELECT (sum(\"value\") / 3600) * 0.2026 AS \"kWh\" FROM \"PAPP\" WHERE time >= now() - 24h GROUP BY time(1h)\n",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series"
+        }
+      ],
+      "timeFrom": "24h",
+      "title": "Cout",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -519,24 +733,24 @@
         }
       ],
       "timeFrom": "4h",
-      "title": "Pi Temperature",
+      "title": "Pi Temp",
       "type": "stat"
     }
   ],
-  "refresh": "5s",
+  "refresh": "30s",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Linky",
   "uid": "fd06eece-deac-452e-bdad-d1f5dfcccb7e",
-  "version": 6,
+  "version": 13,
   "weekStart": ""
 }
