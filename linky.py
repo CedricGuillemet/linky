@@ -22,6 +22,7 @@ from gpiozero import CPUTemperature
 import requests
 import serial
 import yaml
+import subprocess
 from influxdb import InfluxDBClient
 
 from urllib3 import Retry
@@ -32,6 +33,37 @@ DEFAULT_CHECKSUM_METHOD = 1
 
 START_FRAME = b'\x02'  # STX, Start of Text
 STOP_FRAME = b'\x03'   # ETX, End of Text
+
+def get_battery_info():
+    try:
+        # Run the apcaccess command to get UPS information
+        output = subprocess.check_output(["apcaccess"])
+
+        # Decode output bytes to string
+        output = output.decode("utf-8")
+
+        # Split output into lines
+        lines = output.split('\n')
+
+        # Initialize variables to store battery level and autonomy
+        battery_level = None
+        autonomy = None
+
+        # Iterate through lines to find relevant information
+        for line in lines:
+            # Extract battery level
+            if line.startswith('BCHARGE'):
+                battery_level = float(line.split(':')[1].strip().split(' ')[0])
+
+            # Extract autonomy
+            if line.startswith('TIMELEFT'):
+                autonomy = line.split(':')[1].strip().split(' ')[0]
+
+        return battery_level, autonomy
+
+    except subprocess.CalledProcessError:
+        print("Error: Failed to execute apcaccess command.")
+        return None, None
 
 
 def _handler(signum, frame):
@@ -220,6 +252,16 @@ def linky():
                             frame['CONN'] = 1
                         else:
                             frame['CONN'] = 0
+                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                        frame_queue.put(frame)
+                        frame = dict()
+                        #UPS
+                        battery_level, autonomy = get_battery_info()
+                        frame['UPSL'] = battery_level
+                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                        frame_queue.put(frame)
+                        frame = dict()
+                        frame['UPSA'] = autonomy
                         frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                         frame_queue.put(frame)
                         frame = dict()
