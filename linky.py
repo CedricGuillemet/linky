@@ -24,15 +24,34 @@ import serial
 import yaml
 import subprocess
 from influxdb import InfluxDBClient
+import copy
 
 from urllib3 import Retry
 from urllib3.exceptions import HTTPError
+
+from hoymiles_modbus.client import HoymilesModbusTCP
+from hoymiles_modbus.datatypes import MicroinverterType
 
 DEFAULT_KEYS = ('ISOUSC', 'BASE', 'IINST',)
 DEFAULT_CHECKSUM_METHOD = 1
 
 START_FRAME = b'\x02'  # STX, Start of Text
 STOP_FRAME = b'\x03'   # ETX, End of Text
+
+def get_solar_info(shared_data):
+    while not shared_data['stop']:
+        print("Thread started computation")
+        time.sleep(2)  # Simulate a time-consuming computation
+        computed_object = {'data': [1, 2, 3, 4, 5], 'info': 'computed data'}
+
+        # Lock to safely update shared data
+        with shared_data['lock']:
+            shared_data['object'] = computed_object
+            shared_data['completed'] = True
+        print("Thread completed computation")
+
+        # Sleep a bit before next computation
+        time.sleep(1)
 
 def get_battery_info():
     try:
@@ -200,7 +219,7 @@ def linky():
 
                     # Décodage ASCII et nettoyage du retour à la ligne
                     line_str = line.decode('ascii').rstrip()
-                    logging.debug(f'Groupe d\'information brut : {line_str}')
+                    #logging.debug(f'Groupe d\'information brut : {line_str}')
 
                     # Récupération de la somme de contrôle (qui est le dernier caractère de la ligne)
                     checksum = line_str[-1]
@@ -265,6 +284,31 @@ def linky():
                         frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                         frame_queue.put(frame)
                         frame = dict()
+                        #time.sleep(4)
+                        # Solar
+                        plant_data = HoymilesModbusTCP('192.168.1.76', microinverter_type=MicroinverterType.HM).plant_data
+                        frame['SPPW'] = plant_data.pv_power
+                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                        frame_queue.put(frame)
+                        frame = dict()
+                        frame['SPPO'] = plant_data.today_production
+                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                        frame_queue.put(frame)
+                        frame = dict()
+                        panelIndex = 0
+                        for entry in plant_data.microinverter_data:
+                            panelPowerString = f"SPP{panelIndex}"
+                            panelTemperatureString = f"SPT{panelIndex}"
+                            #print(f"Microinverter ID: {entry.pv_power} {entry.temperature} {entry.serial_number}")
+                            frame[panelPowerString] = entry.pv_power
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
+                            frame[panelTemperatureString] = entry.temperature
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
+                            panelIndex = panelIndex + 1
 
                 except Exception as e:
                     logging.error(f'Une exception s\'est produite : {e}', exc_info=True)
