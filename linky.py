@@ -426,4 +426,4 @@ if __name__ == '__main__':
         send_thread.start()
 
     # Lance la boucle infinie de lecture de la téléinfo
-    linky(shared_data)
+    linky()
