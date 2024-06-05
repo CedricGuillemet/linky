@@ -165,7 +165,7 @@ def linky():
     }
 
     # Create and start the thread
-    worker_thread = threading.Thread(target=compute_object, args=(shared_data,))
+    worker_thread = threading.Thread(target=get_solar_info, args=(shared_data,))
     worker_thread.start()
     # Ouverture du port série
     try:
