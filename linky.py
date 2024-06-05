@@ -40,16 +40,11 @@ STOP_FRAME = b'\x03'   # ETX, End of Text
 
 def get_solar_info(shared_data):
     while not shared_data['stop']:
-        print("Thread started computation")
-        time.sleep(2)  # Simulate a time-consuming computation
-        computed_object = {'data': [1, 2, 3, 4, 5], 'info': 'computed data'}
-
+        plant_data = HoymilesModbusTCP('192.168.1.76', microinverter_type=MicroinverterType.HM).plant_data
         # Lock to safely update shared data
         with shared_data['lock']:
-            shared_data['object'] = computed_object
+            shared_data['object'] = plant_data
             shared_data['completed'] = True
-        print("Thread completed computation")
-
         # Sleep a bit before next computation
         time.sleep(1)
 
@@ -161,7 +156,17 @@ def check_internet_connection():
         return False
 
 def linky():
+    # Shared data structure between threads
+    shared_data = {
+        'object': None,
+        'completed': False,
+        'stop': False,
+        'lock': threading.Lock()
+    }
 
+    # Create and start the thread
+    worker_thread = threading.Thread(target=compute_object, args=(shared_data,))
+    worker_thread.start()
     # Ouverture du port série
     try:
         """ frame = dict()
@@ -236,6 +241,12 @@ def linky():
                     # Extraction de la donnée
                     val = line_str[pos+1:-2]
 
+                    with shared_data['lock']:
+                        if shared_data['completed']:
+                            plant_data = copy.deepcopy(shared_data['object'])
+                            shared_data['completed'] = False  # Reset completion status
+
+
                     # Est-ce une étiquette qui nous intéresse ?
                     if key in linky_keys:
                         # Vérification de la somme de contrôle
@@ -286,7 +297,6 @@ def linky():
                         frame = dict()
                         #time.sleep(4)
                         # Solar
-                        plant_data = HoymilesModbusTCP('192.168.1.76', microinverter_type=MicroinverterType.HM).plant_data
                         frame['SPPW'] = plant_data.pv_power
                         frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                         frame_queue.put(frame)
@@ -416,4 +426,4 @@ if __name__ == '__main__':
         send_thread.start()
 
     # Lance la boucle infinie de lecture de la téléinfo
-    linky()
+    linky(shared_data)
