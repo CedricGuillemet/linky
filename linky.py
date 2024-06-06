@@ -40,7 +40,7 @@ def get_solar_info(shared_data):
             # Catch the exception and pass
             print(f"Modbus exception: {e}")
             pass
-        time.sleep(1)
+        time.sleep(10)
 
 def get_battery_info():
     try:
