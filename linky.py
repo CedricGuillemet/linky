@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# __author__ = "Hervé Le Roy"
-# __licence__ = "GNU General Public License v3.0"
-
-# Python 3, pré-requis : pip install PyYAML pySerial influxdb-client
-
-# TODO:
-# * Ajouter un thread séparé pour Linky
-# * Afficher des informations depuis le thread principal
-# * Tester plusieurs scénarios d'erreurs InfluxDB (iptables sur serveur, arrêt du serveur)
-
 # reset ttyS0 sudo stty -F /dev/ttyS0 sane
 import logging
 import queue
@@ -245,7 +234,29 @@ def linky():
                         if shared_data['completed']:
                             plant_data = copy.deepcopy(shared_data['object'])
                             shared_data['completed'] = False  # Reset completion status
-                            print(plant_data)
+                            # Solar
+                            frame['SPPW'] = plant_data.pv_power
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
+                            frame['SPPO'] = plant_data.today_production
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
+                            panelIndex = 0
+                            for entry in plant_data.microinverter_data:
+                                panelPowerString = f"SPP{panelIndex}"
+                                panelTemperatureString = f"SPT{panelIndex}"
+                                #print(f"Microinverter ID: {entry.pv_power} {entry.temperature} {entry.serial_number}")
+                                frame[panelPowerString] = entry.pv_power
+                                frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                                frame_queue.put(frame)
+                                frame = dict()
+                                frame[panelTemperatureString] = entry.temperature
+                                frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                                frame_queue.put(frame)
+                                frame = dict()
+                                panelIndex = panelIndex + 1
 
 
                     # Est-ce une étiquette qui nous intéresse ?
@@ -297,29 +308,6 @@ def linky():
                         frame_queue.put(frame)
                         frame = dict()
                         #time.sleep(4)
-                        # Solar
-                        frame['SPPW'] = plant_data.pv_power
-                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                        frame_queue.put(frame)
-                        frame = dict()
-                        frame['SPPO'] = plant_data.today_production
-                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                        frame_queue.put(frame)
-                        frame = dict()
-                        panelIndex = 0
-                        for entry in plant_data.microinverter_data:
-                            panelPowerString = f"SPP{panelIndex}"
-                            panelTemperatureString = f"SPT{panelIndex}"
-                            #print(f"Microinverter ID: {entry.pv_power} {entry.temperature} {entry.serial_number}")
-                            frame[panelPowerString] = entry.pv_power
-                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                            frame_queue.put(frame)
-                            frame = dict()
-                            frame[panelTemperatureString] = entry.temperature
-                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                            frame_queue.put(frame)
-                            frame = dict()
-                            panelIndex = panelIndex + 1
 
                 except Exception as e:
                     logging.error(f'Une exception s\'est produite : {e}', exc_info=True)
