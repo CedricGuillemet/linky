@@ -29,12 +29,17 @@ STOP_FRAME = b'\x03'   # ETX, End of Text
 
 def get_solar_info(shared_data):
     while not shared_data['stop']:
-        plant_data = HoymilesModbusTCP('192.168.1.76', microinverter_type=MicroinverterType.HM).plant_data
-        # Lock to safely update shared data
-        with shared_data['lock']:
-            shared_data['object'] = plant_data
-            shared_data['completed'] = True
-        # Sleep a bit before next computation
+        try:
+            plant_data = HoymilesModbusTCP('192.168.1.76', microinverter_type=MicroinverterType.HM).plant_data
+            # Lock to safely update shared data
+            with shared_data['lock']:
+                shared_data['object'] = plant_data
+                shared_data['completed'] = True
+            # Sleep a bit before next computation
+        except Exception as e:
+            # Catch the exception and pass
+            print(f"Modbus exception: {e}")
+            pass
         time.sleep(1)
 
 def get_battery_info():
