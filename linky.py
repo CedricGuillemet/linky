@@ -245,6 +245,7 @@ def linky():
                         if shared_data['completed']:
                             plant_data = copy.deepcopy(shared_data['object'])
                             shared_data['completed'] = False  # Reset completion status
+                            print(plant_data)
 
 
                     # Est-ce une étiquette qui nous intéresse ?
