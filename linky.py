@@ -294,11 +294,11 @@ def linky():
                         frame_queue.put(frame)
                         frame = dict()
                         # connection
-                    with shared_data['lock']:
-                        if shared_data['completed']:
+                    with internet_data['lock']:
+                        if internet_data['completed']:
                             conn = copy.deepcopy(internet_data['object'])
                             internet_data['completed'] = False  # Reset completion status
-                            frame['CONN'] = conn.conn
+                            frame['CONN'] = conn['conn']
                             frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                             frame_queue.put(frame)
                             frame = dict()
@@ -307,12 +307,13 @@ def linky():
                         if ups_data['completed']:
                             ups = copy.deepcopy(ups_data['object'])
                             ups_data['completed'] = False  # Reset completion status
+                            #print(ups)
                             #battery_level, autonomy = get_battery_info()
-                            frame['UPSL'] = ups.battery_level
+                            frame['UPSL'] = ups['battery_level']
                             frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                             frame_queue.put(frame)
                             frame = dict()
-                            frame['UPSA'] = ups.autonomy
+                            frame['UPSA'] = ups['autonomy']
                             frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
                             frame_queue.put(frame)
                             frame = dict()
