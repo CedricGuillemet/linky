@@ -217,7 +217,7 @@ def linky():
 
                     # Décodage ASCII et nettoyage du retour à la ligne
                     line_str = line.decode('ascii').rstrip()
-                    #logging.debug(f'Groupe d\'information brut : {line_str}')
+                    logging.debug(f'Groupe d\'information brut : {line_str}')
 
                     # Récupération de la somme de contrôle (qui est le dernier caractère de la ligne)
                     checksum = line_str[-1]
