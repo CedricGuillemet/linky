@@ -40,40 +40,59 @@ def get_solar_info(shared_data):
             # Catch the exception and pass
             print(f"Modbus exception: {e}")
             pass
+        time.sleep(30)
+
+def get_ups_info(shared_data):
+    while not shared_data['stop']:
+        try:
+            # Run the apcaccess command to get UPS information
+            output = subprocess.check_output(["apcaccess"])
+    
+            # Decode output bytes to string
+            output = output.decode("utf-8")
+    
+            # Split output into lines
+            lines = output.split('\n')
+    
+            # Initialize variables to store battery level and autonomy
+            battery_level = None
+            autonomy = None
+    
+            # Iterate through lines to find relevant information
+            for line in lines:
+                # Extract battery level
+                if line.startswith('BCHARGE'):
+                    battery_level = float(line.split(':')[1].strip().split(' ')[0])
+    
+                # Extract autonomy
+                if line.startswith('TIMELEFT'):
+                    autonomy = line.split(':')[1].strip().split(' ')[0]
+
+            # Lock to safely update shared data
+            with shared_data['lock']:
+                shared_data['object'] = {'battery_level': battery_level, 'autonomy': autonomy}
+                shared_data['completed'] = True
+    
+        except Exception as e:
+            print(f"Error: Failed UPS request: {e}")
+            pass
         time.sleep(10)
 
-def get_battery_info():
-    try:
-        # Run the apcaccess command to get UPS information
-        output = subprocess.check_output(["apcaccess"])
-
-        # Decode output bytes to string
-        output = output.decode("utf-8")
-
-        # Split output into lines
-        lines = output.split('\n')
-
-        # Initialize variables to store battery level and autonomy
-        battery_level = None
-        autonomy = None
-
-        # Iterate through lines to find relevant information
-        for line in lines:
-            # Extract battery level
-            if line.startswith('BCHARGE'):
-                battery_level = float(line.split(':')[1].strip().split(' ')[0])
-
-            # Extract autonomy
-            if line.startswith('TIMELEFT'):
-                autonomy = line.split(':')[1].strip().split(' ')[0]
-
-        return battery_level, autonomy
-
-    except subprocess.CalledProcessError:
-        print("Error: Failed to execute apcaccess command.")
-        return None, None
-
-
+def get_internet_info(shared_data):
+    while not shared_data['stop']:
+        try:
+            # Attempt to make a request to a reliable website
+            response = requests.get("http://www.google.com", timeout=5)
+            # If the request is successful, return True
+            with shared_data['lock']:
+                shared_data['object'] = {'conn': 1 if response.status_code == 200 else 0}
+                shared_data['completed'] = True
+            
+        except Exception as e:
+            print(f"Error: Failed internet request: {e}")
+            pass
+        time.sleep(30)
+        
 def _handler(signum, frame):
     logging.info('Programme interrompu par CTRL+C')
     raise SystemExit(0)
@@ -139,16 +158,6 @@ def _checksum(key, val, separator, checksum):
     s = (s & 0x3F) + 0x20
     return (checksum == chr(s))
 
-def check_internet_connection():
-    try:
-        # Attempt to make a request to a reliable website
-        response = requests.get("http://www.google.com", timeout=5)
-        # If the request is successful, return True
-        return response.status_code == 200
-    except requests.ConnectionError:
-        # If there's a connection error (e.g., no internet connection), return False
-        return False
-
 def linky():
     # Shared data structure between threads
     shared_data = {
@@ -158,26 +167,29 @@ def linky():
         'lock': threading.Lock()
     }
 
+    ups_data = {
+        'object': None,
+        'completed': False,
+        'stop': False,
+        'lock': threading.Lock()
+    }
+
+    internet_data = {
+        'object': None,
+        'completed': False,
+        'stop': False,
+        'lock': threading.Lock()
+    }
+
     # Create and start the thread
-    worker_thread = threading.Thread(target=get_solar_info, args=(shared_data,))
-    worker_thread.start()
+    solar_worker_thread = threading.Thread(target=get_solar_info, args=(shared_data,))
+    solar_worker_thread.start()
+    ups_worker_thread = threading.Thread(target=get_ups_info, args=(ups_data,))
+    ups_worker_thread.start()
+    internet_worker_thread = threading.Thread(target=get_internet_info, args=(internet_data,))
+    internet_worker_thread.start()
     # Ouverture du port série
     try:
-        """ frame = dict()
-
-        while True:
-            frame[10] = int(11)
-            # Horodatage de la trame reçue
-            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-            # Ajout à la queue d'envoi vers InfluxDB
-            if influxdb_send_data:
-                frame_queue.put(frame)
-
-            # On réinitialise  une nouvelle trame
-            frame = dict() """
-
-
         baudrate = 1200 if linky_legacy_mode else 9600
         logging.info(
             f'Ouverture du port série {raspberry_stty_port} à {baudrate} Bd')
@@ -199,19 +211,6 @@ def linky():
 
             # Boucle infinie
             while True:
-
-                # -------------------------------------------------------------------------------------------------------------
-                # |                                 Etendue d'un groupe d'information                                         |
-                # -------------------------------------------------------------------------------------------------------------
-                # | LF (0x0A) | Champ 'étiquette' | Séparateur* | Champ 'donnée' | Séparateur* | Champ 'contrôle' | CR (0x0D) |
-                # -------------------------------------------------------------------------------------------------------------
-                #             | Etendue checksum mode n°1                        |                                            |
-                # -------------------------------------------------------------------------------------------------------------
-                #             | Etendue checksum mode n°2                                      |                              |
-                # -------------------------------------------------------------------------------------------------------------
-                #
-                # *Le séparateur peut être SP (0x20) ou HT (0x09)
-
                 try:
                     # Lecture de la première ligne de la première trame
                     line = ser.readline()
@@ -295,23 +294,28 @@ def linky():
                         frame_queue.put(frame)
                         frame = dict()
                         # connection
-                        if check_internet_connection():
-                            frame['CONN'] = 1
-                        else:
-                            frame['CONN'] = 0
-                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                        frame_queue.put(frame)
-                        frame = dict()
+                    with shared_data['lock']:
+                        if shared_data['completed']:
+                            conn = copy.deepcopy(internet_data['object'])
+                            internet_data['completed'] = False  # Reset completion status
+                            frame['CONN'] = conn.conn
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
                         #UPS
-                        battery_level, autonomy = get_battery_info()
-                        frame['UPSL'] = battery_level
-                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                        frame_queue.put(frame)
-                        frame = dict()
-                        frame['UPSA'] = autonomy
-                        frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-                        frame_queue.put(frame)
-                        frame = dict()
+                    with ups_data['lock']:
+                        if ups_data['completed']:
+                            ups = copy.deepcopy(ups_data['object'])
+                            ups_data['completed'] = False  # Reset completion status
+                            #battery_level, autonomy = get_battery_info()
+                            frame['UPSL'] = ups.battery_level
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
+                            frame['UPSA'] = ups.autonomy
+                            frame['TIME'] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                            frame_queue.put(frame)
+                            frame = dict()
                         #time.sleep(4)
 
                 except Exception as e:
