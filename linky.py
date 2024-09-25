@@ -55,8 +55,8 @@ def get_ups_info(shared_data):
             lines = output.split('\n')
     
             # Initialize variables to store battery level and autonomy
-            battery_level = 0
-            autonomy = 0
+            battery_level = 0.0
+            autonomy = 0.0
     
             # Iterate through lines to find relevant information
             for line in lines:
