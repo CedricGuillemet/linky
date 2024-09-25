@@ -55,8 +55,8 @@ def get_ups_info(shared_data):
             lines = output.split('\n')
     
             # Initialize variables to store battery level and autonomy
-            battery_level = '0'
-            autonomy = '0'
+            battery_level = None
+            autonomy = None
     
             # Iterate through lines to find relevant information
             for line in lines:
@@ -70,7 +70,8 @@ def get_ups_info(shared_data):
 
             # Lock to safely update shared data
             with shared_data['lock']:
-                shared_data['object'] = {'battery_level': battery_level, 'autonomy': autonomy}
+                if battery_level is not None and autonomy is not None:
+                    shared_data['object'] = {'battery_level': battery_level, 'autonomy': autonomy}
                 shared_data['completed'] = True
     
         except Exception as e:
