@@ -57,7 +57,7 @@ def main():
         device.writeCharacteristic(handle, value, withResponse=True)
 
         # Listen for notifications
-        print(f"Listening for notifications from {device_address}...")
+        #print(f"Listening for notifications from {device_address}...")
         
         # Loop to listen for notifications only once
         while True:
