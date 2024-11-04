@@ -7,7 +7,28 @@ class MyDelegate(DefaultDelegate):
 
     def handleNotification(self, cHandle, data):
         # Handle the notification
-        print(f"Notification from handle {cHandle}: {data.hex()}")
+        if len(data) < 5:
+            print("Received notification with insufficient data.")
+            return
+
+        # Extract the temperature bytes (first two bytes)
+        temp_high = data[0]
+        temp_low = data[1]
+        
+        # Swap the two bytes and convert to decimal
+        temperature = (temp_low << 8) | temp_high  # Low byte first, then high byte
+        if temperature > 10000:  # Check for negative temperatures
+            temperature -= 65536  # Convert to negative if above 10000
+
+        # Convert to Celsius
+        temperature_celsius = temperature / 100.0  # Assuming temperature is in hundredths of degrees
+
+        # Extract humidity (third byte)
+        humidity = data[2]
+
+        # Print results
+        print(f"Temperature: {temperature_celsius:.2f} °C")
+        print(f"Humidity: {humidity} %")
 
 def main():
     # Replace with your device's MAC address
