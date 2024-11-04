@@ -1,9 +1,12 @@
-from bluepy.btle import Peripheral, UUID, DefaultDelegate
+from bluepy.btle import Peripheral, DefaultDelegate
 import struct
+import argparse
+import time
 
 class MyDelegate(DefaultDelegate):
-    def __init__(self):
-        DefaultDelegate.__init__(self)
+    def __init__(self, device_address):
+        super().__init__()
+        self.device_address = device_address
 
     def handleNotification(self, cHandle, data):
         # Handle the notification
@@ -27,12 +30,18 @@ class MyDelegate(DefaultDelegate):
         humidity = data[2]
 
         # Print results
-        print(f"Temperature: {temperature_celsius:.2f} °C")
-        print(f"Humidity: {humidity} %")
+        print(f"Temperature: {temperature_celsius:.2f} °C, Humidity: {humidity} %")
+        
+        # Stop listening after the first notification
+        return True  # Return True to indicate that we want to stop listening
 
 def main():
-    # Replace with your device's MAC address
-    device_address = "A4:C1:38:2E:0F:6E"
+    # Set up command line argument parsing
+    parser = argparse.ArgumentParser(description="Read temperature and humidity from a Bluetooth device.")
+    parser.add_argument("device_address", help="The MAC address of the Bluetooth device")
+    args = parser.parse_args()
+
+    device_address = args.device_address
     handle = 0x0038  # The handle to write to
     value = b'\x01\x00'  # The value to write (0100)
 
@@ -41,17 +50,20 @@ def main():
         device = Peripheral(device_address)
 
         # Set the delegate to handle notifications
-        device.setDelegate(MyDelegate())
+        delegate = MyDelegate(device_address)
+        device.setDelegate(delegate)
 
         # Write to the characteristic
         device.writeCharacteristic(handle, value, withResponse=True)
 
         # Listen for notifications
-        print("Listening for notifications...")
+        print(f"Listening for notifications from {device_address}...")
+        
+        # Loop to listen for notifications only once
         while True:
-            if device.waitForNotifications(60.0):  # Wait for a notification for 1 second
-                continue  # Notification was handled in the delegate
-            print("Waiting...")
+            if device.waitForNotifications(60.0):  # Wait for a notification for 60 seconds
+                break  # Exit the loop after receiving the first notification
+            #print("Waiting...")
 
     except Exception as e:
         print(f"An error occurred: {e}")
