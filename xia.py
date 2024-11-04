@@ -1,25 +1,41 @@
-from atc_mi_interface import AtcMiInterface
+from bluepy.btle import Peripheral, UUID, DefaultDelegate
+import struct
 
-# Initialize the interface (specify the appropriate connection parameters)
-interface = AtcMiInterface()
+class MyDelegate(DefaultDelegate):
+    def __init__(self):
+        DefaultDelegate.__init__(self)
 
-# Connect to the interface
-interface.connect()
+    def handleNotification(self, cHandle, data):
+        # Handle the notification
+        print(f"Notification from handle {cHandle}: {data.hex()}")
 
-# Define the MAC address
-mac_address = "A4:C1:38:2E:0F:6E"
+def main():
+    # Replace with your device's MAC address
+    device_address = "A4:C1:38:2E:0F:6E"
+    handle = 0x0038  # The handle to write to
+    value = b'\x01\x00'  # The value to write (0100)
 
-# Function to get information from the MAC address
-def get_info_from_mac(mac):
-    # Assuming there's a method to get info by MAC address
-    info = interface.get_device_info(mac)
-    return info
+    try:
+        # Connect to the BLE device
+        device = Peripheral(device_address)
 
-# Get the information for the specified MAC address
-device_info = get_info_from_mac(mac_address)
+        # Set the delegate to handle notifications
+        device.setDelegate(MyDelegate())
 
-# Print the device information
-print(device_info)
+        # Write to the characteristic
+        device.writeCharacteristic(handle, value, withResponse=True)
 
-# Don't forget to disconnect after the operation
-interface.disconnect()
+        # Listen for notifications
+        print("Listening for notifications...")
+        while True:
+            if device.waitForNotifications(1.0):  # Wait for a notification for 1 second
+                continue  # Notification was handled in the delegate
+            print("Waiting...")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        device.disconnect()  # Ensure we disconnect when done
+
+if __name__ == "__main__":
+    main()
