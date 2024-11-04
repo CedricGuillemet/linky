@@ -49,7 +49,7 @@ def main():
         # Listen for notifications
         print("Listening for notifications...")
         while True:
-            if device.waitForNotifications(1.0):  # Wait for a notification for 1 second
+            if device.waitForNotifications(60.0):  # Wait for a notification for 1 second
                 continue  # Notification was handled in the delegate
             print("Waiting...")
 
